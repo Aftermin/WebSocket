@@ -151,9 +151,6 @@ export default function ChatPage() {
             <Send className="w-3.5 h-3.5 text-white" />
           </button>
         </div>
-        <p className="text-xs text-gray-300 mt-1 px-1">
-          Enter ส่งข้อความ · Shift+Enter ขึ้นบรรทัดใหม่
-        </p>
       </div>
     </div>
   );
