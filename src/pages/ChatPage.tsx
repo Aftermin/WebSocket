@@ -13,6 +13,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [connected, setConnected] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -31,8 +32,12 @@ export default function ChatPage() {
     const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}?token=${token}`);
 
     ws.onopen = () => setConnected(true);
-    ws.onclose = () => setConnected(false);
+    ws.onclose = () => {
+      setConnected(false);
+      setIsTyping(false);
+    };
     ws.onmessage = (e) => {
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
         { id: Date.now(), role: "assistant", content: e.data },
@@ -45,7 +50,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isTyping]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -61,6 +66,7 @@ export default function ChatPage() {
       { id: Date.now(), role: "user", content: input },
     ]);
     wsRef.current.send(JSON.stringify({ message: input, tenant_id: tenantId }));
+    setIsTyping(true);
     setInput("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -103,7 +109,7 @@ export default function ChatPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
-        {messages.length === 0 && (
+        {messages.length === 0 && !isTyping && (
           <div className="flex items-center justify-center h-full">
             <p className="text-sm text-gray-300">No messages yet</p>
           </div>
@@ -129,6 +135,17 @@ export default function ChatPage() {
             </div>
           </div>
         ))}
+
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1.5">
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]" />
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]" />
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]" />
+            </div>
+          </div>
+        )}
+
         <div ref={bottomRef} />
       </div>
 
