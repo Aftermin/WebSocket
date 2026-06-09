@@ -180,44 +180,55 @@ export default function ChatPage() {
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
-        {tenants.map((tenant) => {
-          const isActive = tenant.id === activeTenantId;
-          return (
-            <button
-              key={tenant.id}
-              onClick={() => handleSelectTenant(tenant)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors duration-150 group",
-                isActive
-                  ? "bg-[#6D071A] text-white"
-                  : "text-gray-700 hover:bg-gray-200/70"
-              )}
-            >
-              <div
+      <nav className="flex-1 overflow-y-auto p-3">
+        <div className="grid grid-cols-2 gap-3">
+          {tenants.map((tenant) => {
+            const isActive = tenant.id === activeTenantId;
+
+            return (
+              <button
+                key={tenant.id}
+                onClick={() => handleSelectTenant(tenant)}
                 className={cn(
-                  "flex items-center justify-center h-7 w-7 rounded-lg shrink-0 transition-colors",
+                  "flex flex-col items-center justify-center w-full rounded-2xl border p-4 text-center transition-all",
                   isActive
-                    ? "bg-white/20"
-                    : "bg-gray-200 group-hover:bg-gray-300"
+                    ? "border-[#6D071A] bg-[#6D071A] text-white shadow-md"
+                    : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
                 )}
               >
-                <Store
+                <div
                   className={cn(
-                    "h-3.5 w-3.5",
-                    isActive ? "text-white" : "text-gray-500"
+                    "flex h-10 w-10 items-center justify-center rounded-xl mb-3",
+                    isActive ? "bg-white/20" : "bg-gray-100"
                   )}
-                />
-              </div>
-              <span className="text-sm font-medium truncate">
-                {tenant.name}
-              </span>
-              {isActive && (
-                <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 opacity-70" />
-              )}
-            </button>
-          );
-        })}
+                >
+                  <Store
+                    className={cn(
+                      "h-5 w-5",
+                      isActive ? "text-white" : "text-gray-600"
+                    )}
+                  />
+                </div>
+
+                <p className="text-xs font-semibold text-center line-clamp-2">
+                  {tenant.name}
+                </p>
+
+                <p
+                  className={cn(
+                    "mt-1 text-xs pt-2",
+                    isActive ? "text-white/70" : "text-gray-500"
+                  )}
+                >
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-medium text-gray-600">
+                    Store
+                  </span>
+                </p>
+              </button>
+            );
+          })}
+        </div>
+
         {tenants.length === 0 && (
           <p className="text-xs text-gray-400 text-center py-6">
             No stores found
@@ -242,7 +253,7 @@ export default function ChatPage() {
       <aside
         className={cn(
           "hidden sm:flex flex-col bg-slate-50 border-r border-gray-200 transition-all duration-300 shrink-0 overflow-hidden",
-          sidebarOpen ? "w-60" : "w-0"
+          sidebarOpen ? "w-64" : "w-0"
         )}
       >
         <SidebarContent />
