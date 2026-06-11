@@ -1,17 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Store, LogOut, Building2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { type Tenant } from "@/api/tenantApi";
-
-interface ChatSidebarProps {
-  tenants: Tenant[];
-  activeTenantId: string | null;
-  onSelectTenant: (tenant: Tenant) => void;
-  onLogout: () => void;
-  open: boolean;
-  mobileOpen: boolean;
-  onCloseMobile: () => void;
-}
+import type { ChatSidebarProps } from "@/types/chat";
 
 function SidebarContent({
   tenants,

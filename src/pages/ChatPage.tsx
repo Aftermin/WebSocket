@@ -10,27 +10,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tenantApi, type Tenant } from "@/api/tenantApi";
-import { ConfirmActionCard } from "@/components/ui/confirmActionCard";
+import { ConfirmActionCard } from "@/components/ui/ConfirmActionCard";
 import { ChatSidebar } from "@/components/ui/Chatsidebar";
-
-interface BaseMessage {
-  id: number;
-  role: "user" | "assistant";
-  timestamp: Date;
-}
-
-interface TextMessage extends BaseMessage {
-  type: "text";
-  content: string;
-}
-
-interface ConfirmMessage extends BaseMessage {
-  type: "confirm_action";
-  label: string;
-  resolved?: "approved" | "rejected";
-}
-
-type Message = TextMessage | ConfirmMessage;
+import type { Message } from "@/types/chat";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
