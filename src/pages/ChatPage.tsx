@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
   Store,
   LogOut,
-  ChevronRight,
   MessageSquare,
   PanelLeftClose,
   PanelLeftOpen,
@@ -15,13 +14,26 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tenantApi, type Tenant } from "@/api/tenantApi";
+import { ConfirmActionCard } from "@/components/ui/confirmActionCard";
 
-interface Message {
+interface BaseMessage {
   id: number;
   role: "user" | "assistant";
-  content: string;
   timestamp: Date;
 }
+
+interface TextMessage extends BaseMessage {
+  type: "text";
+  content: string;
+}
+
+interface ConfirmMessage extends BaseMessage {
+  type: "confirm_action";
+  label: string;
+  resolved?: "approved" | "rejected";
+}
+
+type Message = TextMessage | ConfirmMessage;
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -83,8 +95,23 @@ export default function ChatPage() {
     ws.onmessage = (e) => {
       try {
         const event = JSON.parse(e.data);
+
         if (event.type === "tool") {
           setActiveTools((prev) => [...prev, event.name]);
+        } else if (event.type === "confirm_action") {
+          // หยุด typing indicator แสดง confirm card แทน
+          setIsTyping(false);
+          setActiveTools([]);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              role: "assistant",
+              type: "confirm_action",
+              label: event.label,
+              timestamp: new Date(),
+            },
+          ]);
         } else if (event.type === "message") {
           setIsTyping(false);
           setActiveTools([]);
@@ -93,6 +120,7 @@ export default function ChatPage() {
             {
               id: Date.now(),
               role: "assistant",
+              type: "text",
               content: event.content,
               timestamp: new Date(),
             },
@@ -106,6 +134,7 @@ export default function ChatPage() {
           {
             id: Date.now(),
             role: "assistant",
+            type: "text",
             content: e.data,
             timestamp: new Date(),
           },
@@ -143,11 +172,31 @@ export default function ChatPage() {
     navigate("/login");
   };
 
+  const handleConfirm = (msgId: number, decision: "approve" | "reject") => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === msgId && m.type === "confirm_action"
+          ? { ...m, resolved: decision === "approve" ? "approved" : "rejected" }
+          : m
+      )
+    );
+
+    wsRef.current?.send(JSON.stringify({ type: "confirm", decision }));
+
+    setIsTyping(true);
+  };
+
   const sendMessage = () => {
     if (!input.trim() || !wsRef.current || !connected) return;
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), role: "user", content: input, timestamp: new Date() },
+      {
+        id: Date.now(),
+        role: "user",
+        type: "text",
+        content: input,
+        timestamp: new Date(),
+      },
     ]);
     wsRef.current.send(
       JSON.stringify({ message: input, tenant_id: activeTenantId })
@@ -165,7 +214,6 @@ export default function ChatPage() {
     }
   };
 
-  // ── Sidebar content (shared between desktop aside & mobile drawer) ──────────
   const SidebarContent = () => (
     <>
       <div
@@ -184,7 +232,6 @@ export default function ChatPage() {
         <div className="grid grid-cols-2 gap-3">
           {tenants.map((tenant) => {
             const isActive = tenant.id === activeTenantId;
-
             return (
               <button
                 key={tenant.id}
@@ -209,11 +256,9 @@ export default function ChatPage() {
                     )}
                   />
                 </div>
-
                 <p className="text-xs font-semibold text-center line-clamp-2">
                   {tenant.name}
                 </p>
-
                 <p
                   className={cn(
                     "mt-1 text-xs pt-2",
@@ -228,7 +273,6 @@ export default function ChatPage() {
             );
           })}
         </div>
-
         {tenants.length === 0 && (
           <p className="text-xs text-gray-400 text-center py-6">
             No stores found
@@ -294,7 +338,6 @@ export default function ChatPage() {
               <PanelLeftOpen className="w-4 h-4 text-gray-500" />
             )}
           </button>
-
           <button
             onClick={() => setMobileDrawerOpen(true)}
             className="flex sm:hidden items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors shrink-0"
@@ -350,17 +393,26 @@ export default function ChatPage() {
                 msg.role === "user" ? "items-end" : "items-start"
               )}
             >
-              <div
-                className={cn(
-                  "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
-                  "break-words whitespace-pre-wrap overflow-hidden",
-                  msg.role === "user"
-                    ? "bg-black text-white rounded-br-sm"
-                    : "bg-gray-100 text-gray-800 rounded-bl-sm"
-                )}
-              >
-                {msg.content}
-              </div>
+              {msg.type === "confirm_action" ? (
+                <ConfirmActionCard
+                  label={msg.label}
+                  resolved={msg.resolved}
+                  onApprove={() => handleConfirm(msg.id, "approve")}
+                  onReject={() => handleConfirm(msg.id, "reject")}
+                />
+              ) : (
+                <div
+                  className={cn(
+                    "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
+                    "break-words whitespace-pre-wrap overflow-hidden",
+                    msg.role === "user"
+                      ? "bg-black text-white rounded-br-sm"
+                      : "bg-gray-100 text-gray-800 rounded-bl-sm"
+                  )}
+                >
+                  {msg.content}
+                </div>
+              )}
               <span className="text-[10px] text-gray-400 px-1">
                 {formatTime(msg.timestamp)}
               </span>
