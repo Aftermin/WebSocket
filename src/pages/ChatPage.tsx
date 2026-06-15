@@ -1,27 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Store,
-  LogOut,
-  ChevronRight,
   MessageSquare,
   PanelLeftClose,
   PanelLeftOpen,
-  Building2,
   MoveUp,
   Wrench,
   Menu,
-  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tenantApi, type Tenant } from "@/api/tenantApi";
-
-interface Message {
-  id: number;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
+import { ConfirmActionCard } from "@/components/ui/ConfirmActionCard";
+import { ChatSidebar } from "@/components/Chatsidebar";
+import type { Message } from "@/types/chat";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -83,8 +74,22 @@ export default function ChatPage() {
     ws.onmessage = (e) => {
       try {
         const event = JSON.parse(e.data);
+
         if (event.type === "tool") {
           setActiveTools((prev) => [...prev, event.name]);
+        } else if (event.type === "confirm_action") {
+          setIsTyping(false);
+          setActiveTools([]);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              role: "assistant",
+              type: "confirm_action",
+              label: event.label,
+              timestamp: new Date(),
+            },
+          ]);
         } else if (event.type === "message") {
           setIsTyping(false);
           setActiveTools([]);
@@ -93,6 +98,7 @@ export default function ChatPage() {
             {
               id: Date.now(),
               role: "assistant",
+              type: "text",
               content: event.content,
               timestamp: new Date(),
             },
@@ -106,6 +112,7 @@ export default function ChatPage() {
           {
             id: Date.now(),
             role: "assistant",
+            type: "text",
             content: e.data,
             timestamp: new Date(),
           },
@@ -128,7 +135,11 @@ export default function ChatPage() {
   }, [input]);
 
   const formatTime = (date: Date) =>
-    date.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+    date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
 
   const handleSelectTenant = (tenant: Tenant) => {
     sessionStorage.setItem("tenant-id", tenant.id);
@@ -143,11 +154,29 @@ export default function ChatPage() {
     navigate("/login");
   };
 
+  const handleConfirm = (msgId: number, decision: "approve" | "reject") => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === msgId && m.type === "confirm_action"
+          ? { ...m, resolved: decision === "approve" ? "approved" : "rejected" }
+          : m
+      )
+    );
+    wsRef.current?.send(JSON.stringify({ type: "confirm", decision }));
+    setIsTyping(true);
+  };
+
   const sendMessage = () => {
     if (!input.trim() || !wsRef.current || !connected) return;
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), role: "user", content: input, timestamp: new Date() },
+      {
+        id: Date.now(),
+        role: "user",
+        type: "text",
+        content: input,
+        timestamp: new Date(),
+      },
     ]);
     wsRef.current.send(
       JSON.stringify({ message: input, tenant_id: activeTenantId })
@@ -165,110 +194,17 @@ export default function ChatPage() {
     }
   };
 
-  // ── Sidebar content (shared between desktop aside & mobile drawer) ──────────
-  const SidebarContent = () => (
-    <>
-      <div
-        onClick={() => navigate("/")}
-        className="flex items-center gap-2.5 px-4 py-4 border-b border-gray-200 cursor-pointer"
-      >
-        <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-[#6D071A]/10">
-          <Building2 className="h-4 w-4 text-[#6D071A]" />
-        </div>
-        <button className="text-sm font-semibold text-gray-800 hover:text-[#6D071A] transition-colors">
-          Stores
-        </button>
-      </div>
-
-      <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
-        {tenants.map((tenant) => {
-          const isActive = tenant.id === activeTenantId;
-          return (
-            <button
-              key={tenant.id}
-              onClick={() => handleSelectTenant(tenant)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors duration-150 group",
-                isActive
-                  ? "bg-[#6D071A] text-white"
-                  : "text-gray-700 hover:bg-gray-200/70"
-              )}
-            >
-              <div
-                className={cn(
-                  "flex items-center justify-center h-7 w-7 rounded-lg shrink-0 transition-colors",
-                  isActive
-                    ? "bg-white/20"
-                    : "bg-gray-200 group-hover:bg-gray-300"
-                )}
-              >
-                <Store
-                  className={cn(
-                    "h-3.5 w-3.5",
-                    isActive ? "text-white" : "text-gray-500"
-                  )}
-                />
-              </div>
-              <span className="text-sm font-medium truncate">
-                {tenant.name}
-              </span>
-              {isActive && (
-                <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 opacity-70" />
-              )}
-            </button>
-          );
-        })}
-        {tenants.length === 0 && (
-          <p className="text-xs text-gray-400 text-center py-6">
-            No stores found
-          </p>
-        )}
-      </nav>
-
-      <div className="px-2 py-3 border-t border-gray-200">
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors duration-150 text-sm font-medium"
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          Logout
-        </button>
-      </div>
-    </>
-  );
-
   return (
     <div className="flex h-screen bg-white overflow-hidden">
-      <aside
-        className={cn(
-          "hidden sm:flex flex-col bg-slate-50 border-r border-gray-200 transition-all duration-300 shrink-0 overflow-hidden",
-          sidebarOpen ? "w-60" : "w-0"
-        )}
-      >
-        <SidebarContent />
-      </aside>
-
-      {mobileDrawerOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/30 sm:hidden"
-          onClick={() => setMobileDrawerOpen(false)}
-        />
-      )}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 flex flex-col bg-slate-50 border-r border-gray-200 transition-transform duration-300 sm:hidden w-64",
-          mobileDrawerOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <button
-          onClick={() => setMobileDrawerOpen(false)}
-          className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-200 transition-colors"
-          aria-label="Close menu"
-        >
-          <X className="h-4 w-4 text-gray-500" />
-        </button>
-        <SidebarContent />
-      </aside>
+      <ChatSidebar
+        tenants={tenants}
+        activeTenantId={activeTenantId}
+        onSelectTenant={handleSelectTenant}
+        onLogout={handleLogout}
+        open={sidebarOpen}
+        mobileOpen={mobileDrawerOpen}
+        onCloseMobile={() => setMobileDrawerOpen(false)}
+      />
 
       <div className="flex flex-col flex-1 min-w-0 relative">
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white z-10">
@@ -283,7 +219,6 @@ export default function ChatPage() {
               <PanelLeftOpen className="w-4 h-4 text-gray-500" />
             )}
           </button>
-
           <button
             onClick={() => setMobileDrawerOpen(true)}
             className="flex sm:hidden items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors shrink-0"
@@ -339,17 +274,26 @@ export default function ChatPage() {
                 msg.role === "user" ? "items-end" : "items-start"
               )}
             >
-              <div
-                className={cn(
-                  "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
-                  "break-words whitespace-pre-wrap overflow-hidden",
-                  msg.role === "user"
-                    ? "bg-black text-white rounded-br-sm"
-                    : "bg-gray-100 text-gray-800 rounded-bl-sm"
-                )}
-              >
-                {msg.content}
-              </div>
+              {msg.type === "confirm_action" ? (
+                <ConfirmActionCard
+                  label={msg.label}
+                  resolved={msg.resolved}
+                  onApprove={() => handleConfirm(msg.id, "approve")}
+                  onReject={() => handleConfirm(msg.id, "reject")}
+                />
+              ) : (
+                <div
+                  className={cn(
+                    "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
+                    "break-words whitespace-pre-wrap overflow-hidden",
+                    msg.role === "user"
+                      ? "bg-black text-white rounded-br-sm"
+                      : "bg-gray-100 text-gray-800 rounded-bl-sm"
+                  )}
+                >
+                  {msg.content}
+                </div>
+              )}
               <span className="text-[10px] text-gray-400 px-1">
                 {formatTime(msg.timestamp)}
               </span>
