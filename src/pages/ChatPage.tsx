@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { tenantApi, type Tenant } from "@/api/tenantApi";
 import { ConfirmActionCard } from "@/components/ui/ConfirmActionCard";
-import { ChatSidebar } from "@/components/ui/Chatsidebar";
+import { ChatSidebar } from "@/components/Chatsidebar";
 import type { Message } from "@/types/chat";
 
 export default function ChatPage() {
@@ -135,7 +135,11 @@ export default function ChatPage() {
   }, [input]);
 
   const formatTime = (date: Date) =>
-    date.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+    date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
 
   const handleSelectTenant = (tenant: Tenant) => {
     sessionStorage.setItem("tenant-id", tenant.id);
