@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 import { tenantApi, type Tenant } from "@/api/tenantApi";
 import { ConfirmActionCard } from "@/components/ui/ConfirmActionCard";
 import { ChatSidebar } from "@/components/Chatsidebar";
-import type { Message } from "@/types/chat";
+import { DynamicForm } from "@/components/DynamicForm";
+import type { Message, FormField } from "@/types/chat";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -90,6 +91,20 @@ export default function ChatPage() {
               timestamp: new Date(),
             },
           ]);
+        } else if (event.type === "form_request") {
+          setIsTyping(false);
+          setActiveTools([]);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              role: "assistant",
+              type: "form_request",
+              title: event.title ?? "กรอกข้อมูล",
+              fields: (event.fields ?? []) as FormField[],
+              timestamp: new Date(),
+            },
+          ]);
         } else if (event.type === "message") {
           setIsTyping(false);
           setActiveTools([]);
@@ -163,6 +178,36 @@ export default function ChatPage() {
       )
     );
     wsRef.current?.send(JSON.stringify({ type: "confirm", decision }));
+    setIsTyping(true);
+  };
+
+  const handleFormSubmit = (
+    msgId: number,
+    data: Record<string, string | number>
+  ) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === msgId ? { ...m, submitted: true } : m))
+    );
+
+    const summary = Object.entries(data)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(", ");
+    const userMsg = `ข้อมูลที่กรอก: ${summary}`;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        role: "user",
+        type: "text",
+        content: userMsg,
+        timestamp: new Date(),
+      },
+    ]);
+
+    wsRef.current?.send(
+      JSON.stringify({ message: userMsg, tenant_id: activeTenantId })
+    );
     setIsTyping(true);
   };
 
@@ -274,7 +319,14 @@ export default function ChatPage() {
                 msg.role === "user" ? "items-end" : "items-start"
               )}
             >
-              {msg.type === "confirm_action" ? (
+              {msg.type === "form_request" ? (
+                <DynamicForm
+                  title={msg.title}
+                  fields={msg.fields}
+                  submitted={msg.submitted}
+                  onSubmit={(data) => handleFormSubmit(msg.id, data)}
+                />
+              ) : msg.type === "confirm_action" ? (
                 <ConfirmActionCard
                   label={msg.label}
                   resolved={msg.resolved}
