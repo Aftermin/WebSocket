@@ -1,28 +1,30 @@
-export interface FormField {
-  name: string;
-  label: string;
-  type: "text" | "number" | "textarea" | "select";
-  value?: string | number;
-  required?: boolean;
-  placeholder?: string;
-  options?: { label: string; value: string }[]; // สำหรับ select
-}
+import { type Tenant } from "@/api/tenantApi";
 
-export interface Message {
+export interface BaseMessage {
   id: number;
   role: "user" | "assistant";
   timestamp: Date;
-  type: "text" | "confirm_action" | "form_request";
-
-  // type: text
-  content?: string;
-
-  // type: confirm_action
-  label?: string;
-  resolved?: "approved" | "rejected";
-
-  // type: form_request
-  title?: string;
-  fields?: FormField[];
-  submitted?: boolean;
 }
+
+export interface TextMessage extends BaseMessage {
+  type: "text";
+  content: string;
+}
+
+export interface ConfirmMessage extends BaseMessage {
+  type: "confirm_action";
+  label: string;
+  resolved?: "approved" | "rejected";
+}
+
+export interface ChatSidebarProps {
+  tenants: Tenant[];
+  activeTenantId: string | null;
+  onSelectTenant: (tenant: Tenant) => void;
+  onLogout: () => void;
+  open: boolean;
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
+}
+
+export type Message = TextMessage | ConfirmMessage;

@@ -15,9 +15,9 @@ export function ConfirmActionCard({
     return (
       <div className="flex items-center gap-2 px-3 py-2 rounded-2xl rounded-bl-sm bg-[#6D071A] text-xs text-white max-w-[80%]">
         {resolved === "approved" ? (
-          <span>ยืนยันการดำเนินการของการ{label} แล้ว</span>
+          <span>ยืนยันการดำเนินการของ {label} แล้ว</span>
         ) : (
-          <span>ยกเลิกการดำเนินการของการ{label} แล้ว</span>
+          <span>ยกเลิกการดำเนินการของ {label} แล้ว</span>
         )}
       </div>
     );
@@ -25,7 +25,7 @@ export function ConfirmActionCard({
 
   return (
     <div className="flex flex-col gap-4 bg-gray-50 rounded-2xl px-6 py-6 max-w-[300px]">
-      <p className="text-sm font-bold text-center text-gray-900">ยืนยันการ</p>
+      <p className="text-sm font-bold text-center text-gray-900">ต้องการ </p>
       <p className="text-xl text-center text-gray-900 px-4">{label}</p>
       <p className="text-sm font-bold text-center text-gray-900">ใช่หรือไม่</p>
       <div className="flex gap-3 mt-1">
