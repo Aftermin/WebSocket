@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList, CircleArrowUp } from "lucide-react";
+import { ClipboardList, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FormField } from "@/types/chat";
 
@@ -129,7 +129,7 @@ export function DynamicForm({
             onClick={handleSubmit}
             className="mt-1 w-full flex items-center justify-center gap-2 bg-[#6D071A] hover:bg-[#5A0515] text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
           >
-            <CircleArrowUp className="w-3.5 h-3.5" />
+            <Send className="w-3.5 h-3.5" />
             ยืนยัน
           </button>
         )}
