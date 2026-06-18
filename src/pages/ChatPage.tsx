@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  MessageSquare,
+  MessageCircleMore,
   PanelLeftClose,
   PanelLeftOpen,
-  MoveUp,
+  CircleArrowUp,
   Wrench,
   Menu,
 } from "lucide-react";
@@ -300,7 +300,7 @@ export default function ChatPage() {
         <div className="flex-1 overflow-y-auto px-4 pt-4 pb-36 space-y-2">
           {!activeTenantId ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-              <MessageSquare className="w-10 h-10 text-gray-200" />
+              <MessageCircleMore className="w-10 h-10 text-gray-200" />
               <p className="text-sm text-gray-400">
                 Select a store from the sidebar to begin
               </p>
@@ -422,7 +422,10 @@ export default function ChatPage() {
                 disabled={!connected || !input.trim()}
                 className="flex items-center justify-center w-8 h-8 rounded-full bg-[#6D071A] hover:bg-[#5A0515] disabled:bg-gray-300 transition-all shrink-0"
               >
-                <MoveUp className="w-4 h-4 text-white" strokeWidth={3} />
+                <CircleArrowUp
+                  className="w-8 h-8 text-white"
+                  strokeWidth={1.5}
+                />
               </button>
             </div>
           </div>

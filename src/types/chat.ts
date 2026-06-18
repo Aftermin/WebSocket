@@ -26,3 +26,17 @@ export interface Message {
   fields?: FormField[];
   submitted?: boolean;
 }
+
+export interface ChatSidebarProps {
+  tenants: Array<{
+    id: string;
+
+    name: string;
+  }>;
+  activeTenantId: string | null;
+  onSelectTenant: (tenant: { id: string; name: string }) => void;
+  onLogout: () => void;
+  open?: boolean;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}
