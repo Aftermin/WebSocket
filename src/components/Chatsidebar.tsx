@@ -24,7 +24,7 @@ function SidebarContent({
           <Building2 className="h-4 w-4 text-[#6D071A]" />
         </div>
         <button className="text-sm font-semibold text-gray-800 hover:text-[#6D071A] transition-colors">
-          Stores
+          Tenants
         </button>
       </div>
 

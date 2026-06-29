@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  MessageSquare,
+  MessageCircleMore,
   PanelLeftClose,
   PanelLeftOpen,
-  MoveUp,
+  CircleArrowUp,
   Wrench,
   Menu,
 } from "lucide-react";
@@ -12,7 +12,10 @@ import { cn } from "@/lib/utils";
 import { tenantApi, type Tenant } from "@/api/tenantApi";
 import { ConfirmActionCard } from "@/components/ui/ConfirmActionCard";
 import { ChatSidebar } from "@/components/Chatsidebar";
-import type { Message } from "@/types/chat";
+import { DynamicForm } from "@/components/DynamicForm";
+import type { Message, FormField } from "@/types/chat";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -90,6 +93,20 @@ export default function ChatPage() {
               timestamp: new Date(),
             },
           ]);
+        } else if (event.type === "form_request") {
+          setIsTyping(false);
+          setActiveTools([]);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              role: "assistant",
+              type: "form_request",
+              title: event.title ?? "กรอกข้อมูล",
+              fields: (event.fields ?? []) as FormField[],
+              timestamp: new Date(),
+            },
+          ]);
         } else if (event.type === "message") {
           setIsTyping(false);
           setActiveTools([]);
@@ -163,6 +180,36 @@ export default function ChatPage() {
       )
     );
     wsRef.current?.send(JSON.stringify({ type: "confirm", decision }));
+    setIsTyping(true);
+  };
+
+  const handleFormSubmit = (
+    msgId: number,
+    data: Record<string, string | number>
+  ) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === msgId ? { ...m, submitted: true } : m))
+    );
+
+    const summary = Object.entries(data)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(", ");
+    const userMsg = `ข้อมูลที่กรอก: ${summary}`;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        role: "user",
+        type: "text",
+        content: userMsg,
+        timestamp: new Date(),
+      },
+    ]);
+
+    wsRef.current?.send(
+      JSON.stringify({ message: userMsg, tenant_id: activeTenantId })
+    );
     setIsTyping(true);
   };
 
@@ -255,7 +302,7 @@ export default function ChatPage() {
         <div className="flex-1 overflow-y-auto px-4 pt-4 pb-36 space-y-2">
           {!activeTenantId ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-              <MessageSquare className="w-10 h-10 text-gray-200" />
+              <MessageCircleMore className="w-10 h-10 text-gray-200" />
               <p className="text-sm text-gray-400">
                 Select a store from the sidebar to begin
               </p>
@@ -274,7 +321,14 @@ export default function ChatPage() {
                 msg.role === "user" ? "items-end" : "items-start"
               )}
             >
-              {msg.type === "confirm_action" ? (
+              {msg.type === "form_request" ? (
+                <DynamicForm
+                  title={msg.title}
+                  fields={msg.fields}
+                  submitted={msg.submitted}
+                  onSubmit={(data) => handleFormSubmit(msg.id, data)}
+                />
+              ) : msg.type === "confirm_action" ? (
                 <ConfirmActionCard
                   label={msg.label}
                   resolved={msg.resolved}
@@ -285,13 +339,47 @@ export default function ChatPage() {
                 <div
                   className={cn(
                     "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
-                    "break-words whitespace-pre-wrap overflow-hidden",
+                    "break-words overflow-hidden",
                     msg.role === "user"
                       ? "bg-black text-white rounded-br-sm"
                       : "bg-gray-100 text-gray-800 rounded-bl-sm"
                   )}
                 >
-                  {msg.content}
+                  {msg.role === "user" ? (
+                    <span className="whitespace-pre-wrap">{msg.content}</span>
+                  ) : (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        table: ({ children }) => (
+                          <div className="overflow-x-auto my-2">
+                            <table className="min-w-full border-collapse text-xs">
+                              {children}
+                            </table>
+                          </div>
+                        ),
+                        thead: ({ children }) => <thead>{children}</thead>,
+                        th: ({ children }) => (
+                          <th className="bg-[#6D071A] text-white px-3 py-1.5 text-left font-medium border border-[#5A0515]">
+                            {children}
+                          </th>
+                        ),
+                        td: ({ children }) => (
+                          <td className="px-3 py-1.5 border border-gray-200">
+                            {children}
+                          </td>
+                        ),
+                        tr: ({ children }) => (
+                          <tr className="even:bg-gray-50">{children}</tr>
+                        ),
+                        p: ({ children }) => (
+                          <p className="mb-1 last:mb-0">{children}</p>
+                        ),
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  )}
                 </div>
               )}
               <span className="text-[10px] text-gray-400 px-1">
@@ -370,7 +458,10 @@ export default function ChatPage() {
                 disabled={!connected || !input.trim()}
                 className="flex items-center justify-center w-8 h-8 rounded-full bg-[#6D071A] hover:bg-[#5A0515] disabled:bg-gray-300 transition-all shrink-0"
               >
-                <MoveUp className="w-4 h-4 text-white" strokeWidth={3} />
+                <CircleArrowUp
+                  className="w-8 h-8 text-white"
+                  strokeWidth={1.5}
+                />
               </button>
             </div>
           </div>
