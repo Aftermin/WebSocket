@@ -14,6 +14,8 @@ import { ConfirmActionCard } from "@/components/ui/ConfirmActionCard";
 import { ChatSidebar } from "@/components/Chatsidebar";
 import { DynamicForm } from "@/components/DynamicForm";
 import type { Message, FormField } from "@/types/chat";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -337,13 +339,47 @@ export default function ChatPage() {
                 <div
                   className={cn(
                     "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
-                    "break-words whitespace-pre-wrap overflow-hidden",
+                    "break-words overflow-hidden",
                     msg.role === "user"
                       ? "bg-black text-white rounded-br-sm"
                       : "bg-gray-100 text-gray-800 rounded-bl-sm"
                   )}
                 >
-                  {msg.content}
+                  {msg.role === "user" ? (
+                    <span className="whitespace-pre-wrap">{msg.content}</span>
+                  ) : (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        table: ({ children }) => (
+                          <div className="overflow-x-auto my-2">
+                            <table className="min-w-full border-collapse text-xs">
+                              {children}
+                            </table>
+                          </div>
+                        ),
+                        thead: ({ children }) => <thead>{children}</thead>,
+                        th: ({ children }) => (
+                          <th className="bg-[#6D071A] text-white px-3 py-1.5 text-left font-medium border border-[#5A0515]">
+                            {children}
+                          </th>
+                        ),
+                        td: ({ children }) => (
+                          <td className="px-3 py-1.5 border border-gray-200">
+                            {children}
+                          </td>
+                        ),
+                        tr: ({ children }) => (
+                          <tr className="even:bg-gray-50">{children}</tr>
+                        ),
+                        p: ({ children }) => (
+                          <p className="mb-1 last:mb-0">{children}</p>
+                        ),
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  )}
                 </div>
               )}
               <span className="text-[10px] text-gray-400 px-1">
