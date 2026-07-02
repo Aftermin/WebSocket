@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList, CircleCheck } from "lucide-react";
+import { ClipboardList, CircleCheck, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FormField } from "@/types/chat";
 
@@ -8,6 +8,7 @@ interface DynamicFormProps {
   fields: FormField[];
   submitted?: boolean;
   onSubmit: (data: Record<string, string | number>) => void;
+  onCancel?: () => void;
 }
 
 export function DynamicForm({
@@ -15,6 +16,7 @@ export function DynamicForm({
   fields,
   submitted,
   onSubmit,
+  onCancel,
 }: DynamicFormProps) {
   const [values, setValues] = useState<Record<string, string | number>>(() =>
     Object.fromEntries(fields.map((f) => [f.name, f.value ?? ""]))
@@ -125,13 +127,24 @@ export function DynamicForm({
         ))}
 
         {!submitted && (
-          <button
-            onClick={handleSubmit}
-            className="mt-1 w-full flex items-center justify-center gap-2 bg-[#6D071A] hover:bg-[#5A0515] text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
-          >
-            <CircleCheck className="w-3.5 h-3.5" />
-            ยืนยัน
-          </button>
+          <div className="mt-1 flex gap-2">
+            {onCancel && (
+              <button
+                onClick={onCancel}
+                className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium py-2.5 rounded-xl transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                ยกเลิก
+              </button>
+            )}
+            <button
+              onClick={handleSubmit}
+              className="flex-1 flex items-center justify-center gap-2 bg-[#6D071A] hover:bg-[#5A0515] text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
+            >
+              <CircleCheck className="w-3.5 h-3.5" />
+              ยืนยัน
+            </button>
+          </div>
         )}
       </div>
     </div>
