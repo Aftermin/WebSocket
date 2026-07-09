@@ -183,6 +183,14 @@ export default function ChatPage() {
     setIsTyping(true);
   };
 
+  const handleFormCancel = (msgId: number) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === msgId ? { ...m, submitted: true, cancelled: true } : m
+      )
+    );
+  };
+
   const handleFormSubmit = (
     msgId: number,
     data: Record<string, string | number>
@@ -327,6 +335,7 @@ export default function ChatPage() {
                   fields={msg.fields}
                   submitted={msg.submitted}
                   onSubmit={(data) => handleFormSubmit(msg.id, data)}
+                  onCancel={() => handleFormCancel(msg.id)}
                 />
               ) : msg.type === "confirm_action" ? (
                 <ConfirmActionCard

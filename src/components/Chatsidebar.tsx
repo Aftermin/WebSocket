@@ -18,16 +18,15 @@ function SidebarContent({
     <>
       <div
         onClick={() => navigate("/")}
-        className="flex items-center gap-2.5 px-4 py-4 border-b border-gray-200 cursor-pointer"
+        className="flex items-center gap-2.5 px-4 py-4  border-gray-200 cursor-pointer"
       >
         <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-[#6D071A]/10">
           <Building2 className="h-4 w-4 text-[#6D071A]" />
         </div>
         <button className="text-sm font-semibold text-gray-800 hover:text-[#6D071A] transition-colors">
-          Tenants
+          Tenants Chat
         </button>
       </div>
-
       <nav className="flex-1 overflow-y-auto p-3">
         <div className="grid grid-cols-2 gap-3">
           {tenants.map((tenant) => {
